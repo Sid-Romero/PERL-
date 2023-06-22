@@ -15,6 +15,7 @@ class LoginField extends StatelessWidget {
         maxWidth: 400,
       ),
       child: TextFormField(
+        style: TextStyle(color: Colors.black),
         decoration: InputDecoration(
           contentPadding: const EdgeInsets.all(27),
           enabledBorder: OutlineInputBorder(
@@ -32,6 +33,7 @@ class LoginField extends StatelessWidget {
             borderRadius: BorderRadius.circular(10),
           ),
           hintText: hintText,
+          hintStyle: TextStyle(color: Colors.black),
         ),
       ),
     );
