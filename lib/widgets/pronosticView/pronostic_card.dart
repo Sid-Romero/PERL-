@@ -11,6 +11,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_responsive_login_ui/widgets/pronosticView/bloc_provider/DurationCubit.dart';
 import 'package:flutter_responsive_login_ui/widgets/pronosticView/bloc_provider/LutteurCubit.dart';
 import 'package:flutter_responsive_login_ui/widgets/gradient_button.dart';
+import 'package:quickalert/quickalert.dart';
 
 class PronosticDetailsCard extends StatefulWidget {
   final User user;
@@ -23,7 +24,49 @@ class PronosticDetailsCard extends StatefulWidget {
 }
 
 class _PronosticDetailsCardState extends State<PronosticDetailsCard> {
+  void _showResultModal(String result, String message) {
+    if (result == "success") {
+      QuickAlert.show(
+          context: context,
+          type: QuickAlertType.success,
+          title: "Bravo !",
+          text: message,
+          // autoCloseDuration: Duration(seconds: 3),
+          confirmBtnColor: Pallete.blackColor);
+    } else if (result == "error") {
+      QuickAlert.show(
+          context: context,
+          type: QuickAlertType.error,
+          title: "Désolé!",
+          text: message,
+          // autoCloseDuration: Duration(seconds: 3),
+          confirmBtnColor: Pallete.borderColor);
+    }
+  }
+
   Pronostic? pronostic; // Ajout de la variable pronostic
+
+  static Future<bool> isModifiablePronostic(int idCombat) async {
+    String url = "http://localhost:5000/api/pronostics/combat";
+    Map body = {"combat": idCombat};
+    print(body);
+    var response = await http.Client().post(Uri.parse(url),
+        headers: {"Content-Type": "application/json"}, body: json.encode(body));
+    if (response.statusCode == 200) {
+      final responseData = json.decode(response.body);
+      final pronosticData = responseData['data'];
+      print(pronosticData);
+      if (responseData['success'] == 1 && pronosticData.isNotEmpty) {
+        final firstPronostic = pronosticData[0];
+        if (firstPronostic['statut_pronostic'] == "ouvert") {
+          return true;
+        } else {
+          return false;
+        }
+      }
+    }
+    return false;
+  }
 
   static Future<Pronostic?> getPronosticById(
       int idPronostiqueur, int idCombat) async {
@@ -48,7 +91,7 @@ class _PronosticDetailsCardState extends State<PronosticDetailsCard> {
             vainqueur: firstPronostic['vainqueur'],
             prenom_vainqueur: firstPronostic['prenom_vainqueur'],
             nom_vainqueur: firstPronostic['nom_vainqueur'],
-            statut: firstPronostic['statut']);
+            statut: firstPronostic['statut_pronostic']);
       }
     }
     return null;
@@ -106,8 +149,9 @@ class _PronosticDetailsCardState extends State<PronosticDetailsCard> {
           return Text('Erreur : ${snapshot.error}');
         } else if (snapshot.hasData) {
           pronostic = snapshot.data!;
-          // Vérifier si le statut du pronostic est "modifiable"
-          final bool isModifiable = pronostic!.statut == "modifiable";
+          //Variable pour vérifier si le pronostic est modifiable ou non
+          bool isModifiable = pronostic!.statut == "ouvert";
+
           //Variable pour récupérer le nom complet du vainqueur désigné
           final nomComplet_vainqueur =
               '${pronostic!.prenom_vainqueur} ${pronostic!.nom_vainqueur}';
@@ -117,6 +161,9 @@ class _PronosticDetailsCardState extends State<PronosticDetailsCard> {
           //Variable pour stocker le nom du lutteur désigné dans le pronostic
           String selectedLutteur = pronostic!.prenom_vainqueur!;
           int selectedVainqueur = pronostic!.vainqueur!;
+          //Variable indiquant les combattants qui s'opposent
+          String cardTitle =
+              '${widget.premierCombat.prenomLutteur1} VS ${widget.premierCombat.prenomLutteur2}';
 
           return Card(
             color: Colors.white70,
@@ -126,7 +173,7 @@ class _PronosticDetailsCardState extends State<PronosticDetailsCard> {
                 Padding(
                   padding: EdgeInsets.all(10),
                   child: Text(
-                    'Détails pronostic',
+                    cardTitle,
                     style: TextStyle(
                       color: Colors.black,
                       fontSize: 18,
@@ -263,13 +310,24 @@ class _PronosticDetailsCardState extends State<PronosticDetailsCard> {
                                   text: 'Enregistrer Modification',
                                   onPressed: () async {
                                     // Action à effectuer lors du clic sur le bouton "Enregistrer Modification"
-                                    bool isUpdated = await updatePronostic(
-                                        selectedDuration,
-                                        selectedVainqueur,
-                                        pronostic!.idPronostic);
-                                    if (isUpdated) {
+                                    isModifiable = await isModifiablePronostic(
+                                        widget.premierCombat.idCombat);
+                                    print(isModifiable);
+                                    if (isModifiable) {
+                                      bool isUpdated = await updatePronostic(
+                                          selectedDuration,
+                                          selectedVainqueur,
+                                          pronostic!.idPronostic);
+                                      if (isUpdated) {
+                                        setState(() {});
+                                        Navigator.pop(
+                                            context); // Ferme le Modal
+                                      }
+                                    } else {
+                                      //Le pronostic n'est plus modifiable
+                                      _showResultModal("error",
+                                          "Pronostics clos pour ce combat !");
                                       setState(() {});
-                                      Navigator.pop(context); // Ferme le Modal
                                     }
                                   },
                                 ),

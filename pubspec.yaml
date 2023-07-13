@@ -50,6 +50,9 @@ dependencies:
 
   #To save the user preferences
   shared_preferences:
+
+  #Web socket 
+  web_socket_channel:
   
   
 
