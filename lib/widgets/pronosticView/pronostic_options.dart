@@ -42,24 +42,54 @@ class _PronosticOptionsState extends State<PronosticOptions> {
     'Plus de 5 minutes',
   ];
 
-  void _showResultModal(String result) {
+  void _showResultModal(String result, String message) {
     if (result == "success") {
       QuickAlert.show(
           context: context,
           type: QuickAlertType.success,
           title: "Bravo !",
-          text: 'Pronostic réalisé avec succès !',
+          text: message,
           // autoCloseDuration: Duration(seconds: 3),
           confirmBtnColor: Pallete.blackColor);
     } else if (result == "error") {
       QuickAlert.show(
           context: context,
+          type: QuickAlertType.error,
+          title: "Attention!",
+          text: message,
+          // autoCloseDuration: Duration(seconds: 3),
+          confirmBtnColor: Pallete.borderColor);
+    } else if (result == "warning") {
+      QuickAlert.show(
+          context: context,
           type: QuickAlertType.warning,
           title: "Attention!",
-          text: 'Choisissez au moins un vainqueur !',
+          text: message,
           // autoCloseDuration: Duration(seconds: 3),
           confirmBtnColor: Pallete.borderColor);
     }
+  }
+
+  static Future<bool> isModifiablePronostic(int idCombat) async {
+    String url = "http://localhost:5000/api/pronostics/combat";
+    Map body = {"combat": idCombat};
+    print(body);
+    var response = await http.Client().post(Uri.parse(url),
+        headers: {"Content-Type": "application/json"}, body: json.encode(body));
+    if (response.statusCode == 200) {
+      final responseData = json.decode(response.body);
+      final pronosticData = responseData['data'];
+      print(pronosticData);
+      if (responseData['success'] == 1 && pronosticData.isNotEmpty) {
+        final firstPronostic = pronosticData[0];
+        if (firstPronostic['statut_pronostic'] == "ouvert") {
+          return true;
+        } else {
+          return false;
+        }
+      }
+    }
+    return false;
   }
 
   Future<bool> createPronostic(
@@ -284,21 +314,30 @@ class _PronosticOptionsState extends State<PronosticOptions> {
 
               // Récupérer la durée sélectionnée
               String? duree = selectedDuration;
+              bool isModifiable =
+                  await isModifiablePronostic(widget.premierCombat.idCombat);
 
-              // Appeler la fonction createPronostic
-              bool successPronostique = await createPronostic(
-                widget.user.id!,
-                widget.premierCombat.idCombat,
-                winner,
-                duree,
-              );
-              if (successPronostique) {
-                // Afficher le modal
-                _showResultModal("success");
-                pronosticBloc.changePronostic(true);
+              if (isModifiable) {
+                // Appeler la fonction createPronostic
+                bool successPronostique = await createPronostic(
+                  widget.user.id!,
+                  widget.premierCombat.idCombat,
+                  winner,
+                  duree,
+                );
+                if (successPronostique) {
+                  // Afficher le modal
+                  _showResultModal(
+                      "success", "Pronostic réalisé avec succès !");
+                  pronosticBloc.changePronostic(true);
+                } else {
+                  _showResultModal(
+                      "warning", "Choisissez au moins un vainqueur");
+                  pronosticBloc.changePronostic(false);
+                }
               } else {
-                _showResultModal("error");
-                pronosticBloc.changePronostic(false);
+                _showResultModal('error', 'Pronostics clos pour ce combat');
+                pronosticBloc.changePronostic(true);
               }
             }
           },
