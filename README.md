@@ -1,16 +1,1 @@
-# flutter_responsive_login_ui
-
-A new Flutter project.
-
-## Getting Started
-
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Ce projet est une application mobile dont le fondament est basé sur Flutter/Dart. Il concerne une application destiné à faire une veille continuen de la lutte Sénégalaise et son écosystème. Informations sur la lutte, l'historique des lutteurs, leurs prochains matchs etc. Ce dépôt ne contient que les données d'interface, en ce qui concerne les données back-end, elles ne sont pas divulgées.
